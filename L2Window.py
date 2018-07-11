@@ -8,10 +8,10 @@ import json
 import datetime
 
 
-class StockFrame(wx.Frame):
-    OrderList = {}
-
-    def __init__(self, stock1, stock2, parent):
+class L2Form(wx.Frame):
+    def __init__(self, stock1, stock2, parent=None):
+        self.parent=parent
+        self.OrderList = {}
         self.depth = None
         self.QuoteThread = None
         self.RefreshThread = None
@@ -23,7 +23,7 @@ class StockFrame(wx.Frame):
         wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=wx.EmptyString, pos=wx.DefaultPosition,
                           size=wx.Size(593, 612), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
 
-        self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
+        self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         self.SetFont(wx.Font(12, 70, 90, 90, False, "宋体"))
 
         gSizer8 = wx.GridSizer(0, 2, 0, 0)
@@ -284,6 +284,7 @@ class StockFrame(wx.Frame):
         self.Centre(wx.BOTH)
 
         # Connect Events
+        self.Bind(wx.EVT_CLOSE, self.L2FormOnClose)
         self.Bind(wx.EVT_KEY_UP, self.MyFrame2OnKeyUp)
         self.QuoteList.Bind(wx.EVT_KEY_UP, self.QuoteListOnKeyUp)
         self.OrderView.Bind(wx.EVT_KEY_UP, self.OrderListOnKeyUp)
@@ -295,6 +296,10 @@ class StockFrame(wx.Frame):
         self.BuyButton.Bind(wx.EVT_BUTTON, self.BuyButtonOnButtonClick)
         self.SellButton.Bind(wx.EVT_BUTTON, self.SellButtonOnButtonClick)
         self.ButtonRefresh.Bind(wx.EVT_BUTTON, self.ButtonRefreshOnButtonClick)
+
+    def L2FormOnClose(self, event):
+        self.parent.RemoveL2Window(self.RequestStockText)
+        event.Skip()
 
     def DealOtherKey(self, key):
         if key == wx.WXK_F4:
@@ -529,7 +534,7 @@ class StockFrame(wx.Frame):
             self.Stock2Balance.SetLabelText(str(Balances[self.Stock2][0]))
             self.Stock2CanUse.SetLabelText(str(Balances[self.Stock2][1]))
 
-    def ShowQuote(self, quote):
+    def RefreshQuote(self, quote):
         asks = quote["data"]["asks"]
         if len(asks) >= 20:
             Total = 0
@@ -585,7 +590,7 @@ if __name__ == "__main__":
     ButtonSellColor = wx.Colour(255, 83, 83)
     BaseTimeT = int(time.time() * 1000)
     app = wx.App()
-    CurStockFame = StockFrame("ft", "usdt", None)
+    CurStockFame = L2Form("ft", "usdt")
     CurStockFame.Show()
     CurStockFame.FrameInit()
     app.MainLoop()
