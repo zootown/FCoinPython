@@ -8,6 +8,7 @@ class DepthWsClass(threading.Thread):
         threading.Thread.__init__(self)
         self.fc = fc
 
+    #Lock机制待完善
     async def wsthread(self):
         async with websockets.connect('wss://ws.fcoin.com/api/v2/ws') as websocket:
             print("DepthOpened")

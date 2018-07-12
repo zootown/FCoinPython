@@ -13,10 +13,13 @@ import time
 import L2Window
 import threading
 import FCoinWsWin7AndServer
+import FCoin
 
 ###########################################################################
 ## Class MainWindow
 ###########################################################################
+
+FCoinObject = FCoin.FCoinClass()
 
 class MainWindow(wx.Frame):
 
@@ -59,14 +62,21 @@ class MainWindow(wx.Frame):
         self.AddL2Window("ft", "usdt")
         event.Skip()
 
-    def RemoveL2Window(self,key):
+    def RemoveL2Window(self,key,win):
+        global FCoinObject
         with self.L2Lock:
             try:
-                del self.L2List[key]
+                if key in self.L2List:
+                    del self.L2List[key]
+                if key in self.WsList:
+                    self.WsList[key].RemoveDepthAction(win.RefreshQuote)
+                FCoinObject.RemoveBalanceAction(win.ShowBalance)
+                FCoinObject.RemoveOrderAction(win.RefreshOrder)
             except:
-                pass
+                print("RemoveL2WindowError")
 
     def AddL2Window(self,s1,s2):
+        global FCoinObject
         with self.L2Lock:
             key = (s1 + s2).lower()
             if key not in self.L2List:
@@ -78,6 +88,8 @@ class MainWindow(wx.Frame):
                     ws=FCoinWsWin7AndServer.FCoinWsClass(key)
                     self.WsList[key]=ws
                     ws.AddDepthAction(CurStockFame.RefreshQuote)
+                    FCoinObject.AddBalanceAction(CurStockFame.ShowBalance)
+                    FCoinObject.AddOrderAction(CurStockFame.RefreshOrder)
             else:
                 pass
 

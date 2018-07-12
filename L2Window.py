@@ -11,7 +11,6 @@ import FCoin
 
 class L2Form(wx.Frame):
     def __init__(self, stock1, stock2, parent=None):
-        self.FCoinObject= FCoin.FCoinClass()
         self.ButtonBuyColor = wx.Colour(6, 176, 124)
         self.ButtonSellColor = wx.Colour(255, 83, 83)
         self.BaseTimeT = int(time.time() * 1000)
@@ -303,7 +302,7 @@ class L2Form(wx.Frame):
         self.ButtonRefresh.Bind(wx.EVT_BUTTON, self.ButtonRefreshOnButtonClick)
 
     def L2FormOnClose(self, event):
-        self.parent.RemoveL2Window(self.RequestStockText)
+        self.parent.RemoveL2Window(self.RequestStockText,self)
         event.Skip()
 
     def DealOtherKey(self, key):
@@ -522,14 +521,23 @@ class L2Form(wx.Frame):
                 d1 = self.OrderView.GetItemData(ItemIndex);
                 self.SetItemText(CurOrder, ItemIndex)
 
-    def ShowBalance(self):
-        global Balances
-        if self.Stock1 in Balances:
-            self.Stock1Balance.SetLabelText(str(Balances[self.Stock1][0]))
-            self.Stock1CanUse.SetLabelText(str(Balances[self.Stock1][1]))
-        if self.Stock2 in Balances:
-            self.Stock2Balance.SetLabelText(str(Balances[self.Stock2][0]))
-            self.Stock2CanUse.SetLabelText(str(Balances[self.Stock2][1]))
+    def ShowBalance(self,Balance):
+        #for CurStock in Result["data"]:
+        #    Balances[CurStock["currency"]] = [round(float(CurStock["balance"]), 4),
+        #                                      round(float(CurStock["available"]), 4)]
+        Stock1Find=False
+        Stock2Find=False
+        for CurStock in Balance["data"]:
+            if (not Stock1Find) and self.Stock1 == CurStock["currency"]:
+                self.Stock1Balance.SetLabelText(str(round(float(CurStock["balance"]), 4)))
+                self.Stock1CanUse.SetLabelText(str(round(float(CurStock["available"]), 4)))
+                Stock1Find=True
+            elif (not Stock2Find) and self.Stock2 == CurStock["currency"]:
+                self.Stock2Balance.SetLabelText(str(round(float(CurStock["balance"]), 4)))
+                self.Stock2CanUse.SetLabelText(str(round(float(CurStock["available"]), 4)))
+                Stock2Find=True
+            if Stock1Find and Stock2Find:
+                break
 
     def RefreshQuote(self, quote):
         self.depth=quote
