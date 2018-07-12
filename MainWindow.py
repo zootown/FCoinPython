@@ -12,7 +12,7 @@ import wx.xrc
 import time
 import L2Window
 import threading
-import FCoinWs
+import FCoinWsWin7AndServer
 
 ###########################################################################
 ## Class MainWindow
@@ -75,7 +75,7 @@ class MainWindow(wx.Frame):
                 self.L2List[key] = CurStockFame
                 CurStockFame.FrameInit()
                 if key not in self.WsList:
-                    ws=FCoinWs.FCoinWsClass(key)
+                    ws=FCoinWsWin7AndServer.FCoinWsClass(key)
                     self.WsList[key]=ws
                     ws.AddDepthAction(CurStockFame.RefreshQuote)
             else:

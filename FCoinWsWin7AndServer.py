@@ -1,29 +1,33 @@
-import configparser
 import threading
-import websocket
+import websockets
 import json
-
-cf = configparser.ConfigParser()
-cf.read("fcoin.ini")
-key = cf.get("Key", "Public")
-secret = cf.get("Key", "Secret")
-websocket.enableTrace(True)
+import asyncio
 
 class DepthWsClass(threading.Thread):
     def __init__(self, fc):
         threading.Thread.__init__(self)
         self.fc = fc
 
-    def run(self):
-        with self.fc.DepthLock:
-            self.fc.DepthWs = websocket.WebSocketApp("wss://ws.fcoin.com/api/v2/ws",
-                                                     on_message=self.fc.on_DepthMessage,
-                                                     on_error=self.fc.on_DepthError,
-                                                     on_close=self.fc.on_DepthClose)
-            self.fc.DepthWs.on_open = self.fc.on_DepthOpen
-            print("try to Open Depth", end="\n")
-        self.fc.DepthWs.run_forever()
+    async def wsthread(self):
+        async with websockets.connect('wss://ws.fcoin.com/api/v2/ws') as websocket:
+            print("DepthOpened")
+            response = await websocket.recv()
+            s = "depth.L20.{}".format("ftusdt")
+            req = {
+                'cmd': 'sub',
+                'args': [s],
+            }
+            cmd = json.dumps(req)
+            await websocket.send(cmd)
+            while True:
+                response = await websocket.recv()
+                data=json.loads(response)
+                if "bids" in data:
+                    self.fc.on_DepthMessage(websocket,data)
 
+    def run(self):
+        asyncio.new_event_loop().run_until_complete(self.wsthread())
+        self.fc.on_DepthClose(None)
 
 class TASWsClass(threading.Thread):
     def __init__(self, fc):
@@ -32,10 +36,6 @@ class TASWsClass(threading.Thread):
 
     def run(self):
         with self.fc.TASLock:
-            self.fc.TasWs = websocket.WebSocketApp("wss://ws.fcoin.com/api/v2/ws",
-                                                   on_message=self.fc.on_TasMessage,
-                                                   on_error=self.fc.on_TasError,
-                                                   on_close=self.fc.on_TasClose)
 
             self.fc.TasWs.on_open = self.fc.on_TasOpen
             print("try to Open TAS", end="\n")
@@ -138,7 +138,7 @@ class FCoinWsClass():
 
     def on_DepthClose(self, ws):
         print("Depth closed:" + str(ws), end="\n")
-        self.StartDepthWs(self)
+        self.StartDepthWs()
 
     def on_DepthOpen(self, ws):
         print("Depth open:" + str(ws), end="\n")
@@ -148,7 +148,7 @@ class FCoinWsClass():
             'args': [s],
         }
         cmd = json.dumps(req)
-        ws.send(json.dumps(req))
+        ws.send(cmd)
 
     def on_TasError(self, ws, error):
         ws.close()
@@ -156,7 +156,7 @@ class FCoinWsClass():
 
     def on_TasClose(self, ws):
         print("TAS closed:" + str(ws), end="\n")
-        self.StartTASWs(self)
+        self.StartTASWs()
 
 
     def on_TasOpen(self, ws):
@@ -170,5 +170,9 @@ class FCoinWsClass():
         ws.send(json.dumps(req))
 
 
+
+
+
+
 if __name__== '__main__':
-    fc= FCoinWsClass('ftusdt')
+    print("11")

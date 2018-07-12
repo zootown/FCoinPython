@@ -6,10 +6,15 @@ import threading
 import time
 import json
 import datetime
+import FCoin
 
 
 class L2Form(wx.Frame):
     def __init__(self, stock1, stock2, parent=None):
+        self.FCoinObject= FCoin.FCoinClass()
+        self.ButtonBuyColor = wx.Colour(6, 176, 124)
+        self.ButtonSellColor = wx.Colour(255, 83, 83)
+        self.BaseTimeT = int(time.time() * 1000)
         self.parent=parent
         self.OrderList = {}
         self.depth = None
@@ -304,25 +309,25 @@ class L2Form(wx.Frame):
     def DealOtherKey(self, key):
         if key == wx.WXK_F4:
             if self.depth != None:
-                self.BuyPrice.Value = str(self.depth["data"]["asks"][0])
+                self.BuyPrice.Value = str(self.depth["asks"][0])
                 self.BuyQty.Value = str(self.DefaultBuy.Value)
                 self.SetBuyEnable()
                 self.SetSellDisable()
         elif key == wx.WXK_F3:
             if self.depth != None:
-                self.SellPrice.Value = str(self.depth["data"]["bids"][0])
+                self.SellPrice.Value = str(self.depth["bids"][0])
                 self.SellQty.Value = str(self.DefaultSell.Value)
                 self.SetSellEnable()
                 self.SetBuyDisable()
         elif key == wx.WXK_F6:
             if self.depth != None:
-                self.BuyPrice.Value = str(self.depth["data"]["bids"][0])
+                self.BuyPrice.Value = str(self.depth["bids"][0])
                 self.BuyQty.Value = str(self.DefaultBuy.Value)
                 self.SetBuyEnable()
                 self.SetSellDisable()
         elif key == wx.WXK_F5:
             if self.depth != None:
-                self.SellPrice.Value = str(self.depth["data"]["asks"][0])
+                self.SellPrice.Value = str(self.depth["asks"][0])
                 self.SellQty.Value = str(self.DefaultSell.Value)
                 self.SetSellEnable()
                 self.SetBuyDisable()
@@ -333,7 +338,7 @@ class L2Form(wx.Frame):
                 self.DoBuy()
             elif self.SellButton.Enabled:
                 self.DoSell()
-        if key == wx.WXK_UP:
+        elif key == wx.WXK_UP:
             if self.BuyButton.Enabled:
                 box = self.BuyPrice
             elif self.SellButton.Enabled:
@@ -351,7 +356,7 @@ class L2Form(wx.Frame):
                 return
             Price = round(float(box.Value) - 0.0002, 6)
             box.Value = str(Price)
-        if key == wx.WXK_RIGHT:
+        elif key == wx.WXK_RIGHT:
             if self.BuyButton.Enabled:
                 box = self.BuyQty
             elif self.SellButton.Enabled:
@@ -444,7 +449,7 @@ class L2Form(wx.Frame):
         self.RefreshOrder(self.OrderList.copy())
 
     def SetBuyEnable(self):
-        self.BuyButton.SetBackgroundColour(ButtonBuyColor)
+        self.BuyButton.SetBackgroundColour(self.ButtonBuyColor)
         self.BuyButton.Enable(True)
 
     def SetBuyDisable(self):
@@ -452,7 +457,7 @@ class L2Form(wx.Frame):
         self.BuyButton.Enable(False)
 
     def SetSellEnable(self):
-        self.SellButton.SetBackgroundColour(ButtonSellColor)
+        self.SellButton.SetBackgroundColour(self.ButtonSellColor)
         self.SellButton.Enable(True)
 
     def SetSellDisable(self):
@@ -460,20 +465,12 @@ class L2Form(wx.Frame):
         self.SellButton.Enable(False)
 
     def DoBuy(self):
-        global api
-        Result = api.buy(self.RequestStockText, self.BuyPrice.Value, self.BuyQty.Value)
-        if Result != None and Result["status"] == 0:
-            print(Result)
+        self.FCoinObject.DoBuy(self.RequestStockText, self.BuyPrice.Value, self.BuyQty.Value)
         self.SetBuyDisable()
-        print(Result)
 
     def DoSell(self):
-        global api
-        Result = api.sell(self.RequestStockText, self.SellPrice.Value, self.SellQty.Value)
-        if Result != None and Result["status"] == 0:
-            print(Result)
+        self.FCoinObject.DoSell(self.RequestStockText, self.SellPrice.Value, self.SellQty.Value)
         self.SetSellDisable()
-        print(Result)
 
     def CancelOrder(self, id):
         global api
@@ -499,7 +496,7 @@ class L2Form(wx.Frame):
             HadItem = False
             ItemData = self.OrderView.GetItemData(Index)
             for (key, CurOrder) in TempOrders.items():
-                if CurOrder["created_at"] - BaseTimeT == ItemData:
+                if CurOrder["created_at"] - self.BaseTimeT == ItemData:
                     HadItem = True;
                     break;
             if not HadItem:
@@ -510,7 +507,7 @@ class L2Form(wx.Frame):
         for CurOrder in TempOrders.values():
             ItemIndex = -1
             OrderRealTime = CurOrder["created_at"]
-            OrderTime = CurOrder["created_at"] - BaseTimeT
+            OrderTime = CurOrder["created_at"] - self.BaseTimeT
             for Index in range(0, self.OrderView.ItemCount):
                 if self.OrderView.GetItemData(Index) == OrderTime:
                     ItemIndex = Index
@@ -535,7 +532,8 @@ class L2Form(wx.Frame):
             self.Stock2CanUse.SetLabelText(str(Balances[self.Stock2][1]))
 
     def RefreshQuote(self, quote):
-        asks = quote["data"]["asks"]
+        self.depth=quote
+        asks = quote["asks"]
         if len(asks) >= 20:
             Total = 0
             for i in range(10):
@@ -544,7 +542,7 @@ class L2Form(wx.Frame):
                 Total += size
                 self.QuoteList.SetItem(9 - i, 1, str(size));
                 self.QuoteList.SetItem(9 - i, 2, str(Total));
-        bids = quote["data"]["bids"]
+        bids = quote["bids"]
         if len(bids) >= 20:
             Total = 0
             for i in range(10):
@@ -586,9 +584,6 @@ class L2Form(wx.Frame):
         pass
 
 if __name__ == "__main__":
-    ButtonBuyColor = wx.Colour(6, 176, 124)
-    ButtonSellColor = wx.Colour(255, 83, 83)
-    BaseTimeT = int(time.time() * 1000)
     app = wx.App()
     CurStockFame = L2Form("ft", "usdt")
     CurStockFame.Show()
