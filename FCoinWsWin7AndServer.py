@@ -13,7 +13,7 @@ class DepthWsClass(threading.Thread):
         async with websockets.connect('wss://ws.fcoin.com/api/v2/ws') as websocket:
             print("DepthOpened")
             response = await websocket.recv()
-            s = "depth.L20.{}".format("ftusdt")
+            s = "depth.L20.{}".format(self.fc.symbol)
             req = {
                 'cmd': 'sub',
                 'args': [s],

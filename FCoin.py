@@ -49,23 +49,16 @@ class OrderThreadClass(threading.Thread):
             while True:
                 TempList = {}
                 OldList = OrderList.copy()
-                partial_filled = api.list_orders(symbol="ftusdt", states="partial_filled")
-                if partial_filled != None and partial_filled["status"] == 0:
-                    for CurOrder in partial_filled["data"]:
+                #CurOrders = api.list_orders(symbol="ftusdt", states="CurOrders",limit=100)
+                CurOrders = api.list_orders(symbol="ftusdt", states="CurOrders,submitted",limit=100)
+                if CurOrders != None and CurOrders["status"] == 0:
+                    for CurOrder in CurOrders["data"]:
                         OrderList[CurOrder["id"]] = CurOrder
                         TempList[CurOrder["id"]] = CurOrder
                 else:
                     time.sleep(1)
                     continue
-                time.sleep(0.8)
-                submitted = api.list_orders(symbol="ftusdt", states="submitted")
-                if submitted != None and submitted["status"] == 0:
-                    for CurOrder in submitted["data"]:
-                        OrderList[CurOrder["id"]] = CurOrder
-                        TempList[CurOrder["id"]] = CurOrder
-                else:
-                    time.sleep(1)
-                    continue
+
                 for (key, CurOrder) in OldList.items():
                     if key not in TempList:
                         del OrderList[key]
@@ -156,3 +149,7 @@ class FCoinClass():
             except:
                 print("RemoveBalanceActionError")
 
+
+
+if __name__=="__main__":
+    StartOrderThread()
